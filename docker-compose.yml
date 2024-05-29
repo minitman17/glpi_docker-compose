@@ -1,0 +1,41 @@
+version: "3.2"
+
+services:
+  glpi_database:
+    image: alex773/mariadb:10.11.8-r0
+    container_name: glpi_database
+    hostname: glpi_database
+    volumes:
+      - ./conf/mariadb/my.cnf:/etc/mysql/my.cnf
+      - /var/www/html/docker-glpi/db/:/var/lib/mysql
+    env_file:
+      - ./conf/mariadb/mariadb.env
+    restart: always
+
+  glpi_backend:
+    image: alex773/glpi:latest
+    container_name: glpi_backend
+    hostname: glpi_backend
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /var/www/html/glpi/:/var/www/html/glpi
+    environment:
+      - TIMEZONE=Europe/Moscow
+      - VERSION_GLPI=10.0.15
+    restart: always
+    depends_on:
+      - glpi_database
+
+  nginx:
+    image: alex773/nginx:1.26.0
+    container_name: app_nginx
+    volumes:
+      - ./conf/nginx/:/etc/nginx/conf.d
+      - /var/www/html/glpi/:/var/www/html/glpi
+    ports:
+      - '80:80'
+      - '443:443'
+    depends_on:
+      - glpi_backend
+      - glpi_database
